@@ -1,0 +1,21 @@
+# Default values for colorpad-db.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+version: "13"
+
+name: postgresql
+
+database: 
+  dbname: "sampledb"
+  username: 
+  password: 
+
+memoryLimit: 512Mi
+
+persistent: false
+volumeSize: 1
+
+expose: false
+
+replicaCount: 1

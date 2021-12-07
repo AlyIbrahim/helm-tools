@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    maintainer: Aly Ibrahim<https://github.com/AlyIbrahim>
+  labels:
+    app: postgresql
+    app.openshift.io/runtime: postgresql
+  name: {{ $.Values.name }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: postgresql
+      deployment: {{ $.Values.name }}
+  template:
+    metadata:
+      labels:
+        app: postgresql
+        deployment: {{ $.Values.name }}
+    spec:
+      containers:
+      - env:
+        - name: POSTGRESQL_USER
+          valueFrom:
+            secretKeyRef:
+              key: database-user
+              name: {{ $.Values.name }}
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: database-password
+              name: {{ $.Values.name }}
+        - name: POSTGRESQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              key: database-name
+              name: {{ $.Values.name }}
+                #        image: image-registry.openshift-image-registry.svc:5000/openshift/postgresql:latest
+        {{- $vers := list "96" "10" "12" "13" }}
+        {{- if not (has $.Values.version $vers) }}
+          {{- fail  "Valid versions are 96 10 12 13" }}
+        {{- end }}
+        image: registry.redhat.io/rhel8/postgresql-{{ $.Values.version }}:latest
+
+          #        image: registry.redhat.io/rhel8/postgresql-13@sha256:f32fabe87b62765738a0a95b3b9ba3a009481ce3de9b351e7b4e14580b68a381
+        imagePullPolicy: IfNotPresent
+        name: {{ $.Values.name }}
+        livenessProbe:
+          exec:
+            command:
+            - /usr/libexec/check-container
+            - --live
+          failureThreshold: 3
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: {{ $.Values.name }}
+        ports:
+        - containerPort: 5432
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - /usr/libexec/check-container
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            memory: {{ $.Values.memoryLimit  }}
+        securityContext:
+          capabilities: {}
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/lib/pgsql/data
+          name: postgresql-data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: postgresql-data
+        {{- if .Values.persistent }}
+        persistentVolumeClaim:
+          claimName: {{ $.Values.name }}-data
+        {{ else }}
+        emptyDir: {}
+        {{- end }}
