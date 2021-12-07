@@ -7,7 +7,7 @@
    "properties": {
        "version": {
 	       "type": "integer",
-	       "enum": ["96", "10", "12", "13"]
+	       "enum": [96, 10, 12, 13]
        },
        "name": {
 	       "type": "string"
@@ -20,10 +20,10 @@
 			       "type": "string"
 		       },
 		       "username": {
-			       "type": "string"
+			       "type": [ "string", "null" ]
 		       },
 		       "password": {
-			       "type": "string"
+			       "type": [ "string", "null" ]
 		       }
 	       }
        },
