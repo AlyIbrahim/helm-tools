@@ -3,12 +3,12 @@ entries:
   postgresql:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2021-12-07T13:08:02.401802373-06:00"
+    created: "2021-12-07T13:15:28.297695596-06:00"
     description: A Helm chart for installing RHEL based postgresql database
-    digest: f6eb30992240eef7c8a36d5fd91ec6421e5c7a4e29ea3c7221ac1dd01b705f00
+    digest: ac7e3a42f3dd55d0bf5b0004473ea8bafec0dbf740f5bbb0317a5cf291563323
     name: postgresql
     type: application
     urls:
     - https://alyibrahim.github.io/helm-tools/charts/postgresql-0.1.0.tgz
     version: 0.1.0
-generated: "2021-12-07T13:08:02.401232716-06:00"
+generated: "2021-12-07T13:15:28.297137708-06:00"
