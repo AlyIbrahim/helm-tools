@@ -37,8 +37,8 @@ spec:
             secretKeyRef:
               key: database-name
               name: {{ $.Values.name }}
-        {{- $vers := list "96" "10" "12" "13" }}
-        {{- if not (has $.Values.version $vers) }}
+        {{- $vers := list 96 10 12 13 | toStrings }}
+        {{- if not (has ($.Values.version | toString) $vers) }}
           {{- fail  "Valid versions are 96 10 12 13" }}
         {{- end }}
         image: registry.redhat.io/rhel8/postgresql-{{ $.Values.version }}:latest
