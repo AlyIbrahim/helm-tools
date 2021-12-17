@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    maintainer: Aly Ibrahim<https://github.com/AlyIbrahim>
+  labels:
+    app: postgresql
+    app.openshift.io/runtime: postgresql
+  name: {{ $.Values.name }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: postgresql
+      deployment: {{ $.Values.name }}
+  template:
+    metadata:
+      labels:
+        app: postgresql
+        deployment: {{ $.Values.name }}
+    spec:
+      containers:
+      - env:
+        - name: POSTGRESQL_USER
+          valueFrom:
+            secretKeyRef:
+              key: database-user
+              name: {{ $.Values.name }}
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: database-password
+              name: {{ $.Values.name }}
+        - name: POSTGRESQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              key: database-name
+              name: {{ $.Values.name }}
+        {{- if $.Values.debezium }}
+        - name: ENABLE_REPLICATION
+          value: 'true'
+        {{- end}}
+        {{- $vers := list 96 10 12 13 | toStrings }}
+        {{- if not (has ($.Values.version | toString) $vers) }}
+          {{- fail  "Valid versions are 96 10 12 13" }}
+        {{- end }}
+        image: registry.redhat.io/rhel8/postgresql-{{ $.Values.version }}:latest
+
+        imagePullPolicy: IfNotPresent
+        name: {{ $.Values.name }}
+        livenessProbe:
+          exec:
+            command:
+            - /usr/libexec/check-container
+            - --live
+          failureThreshold: 3
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: {{ $.Values.name }}
+        ports:
+        - containerPort: 5432
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - /usr/libexec/check-container
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            memory: {{ $.Values.memoryLimit  }}
+        securityContext:
+          capabilities: {}
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/lib/pgsql/data
+          name: postgresql-data
+        {{- if $.Values.debezium }}
+        - name: volume-repl
+          mountPath: >-
+            usr/share/container-scripts/postgresql/openshift-custom-postgresql-replication.conf.template
+          subPath: openshift-custom-postgresql-replication.conf.template        
+        {{- end }}
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: postgresql-data
+        {{- if .Values.persistent }}
+        persistentVolumeClaim:
+          claimName: {{ $.Values.name }}-data
+        {{ else }}
+        emptyDir: {}
+        {{- end }}
+      {{- if .Values.debezium }}
+      - name: volume-repl
+        configMap:
+          name: postgresql-deb
+          defaultMode: 420
+      {{- end }}
